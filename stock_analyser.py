@@ -14,7 +14,7 @@ from utils.report_generator import ReportGenerator
 
 
 def format_currency(value):
-    """Format number as currency."""
+    """Format as currency."""
     if value is None:
         return "N/A"
     try:
@@ -118,15 +118,15 @@ def analyze_ticker(ticker: str, args, basic: bool = False) -> None:
         basic: If True, show only basic metrics
     """
     print("\n" + "=" * 60)
-    print(f" 📊 STOCK ANALYZER - {ticker.upper()}")
+    print(f" [CHART] STOCK ANALYZER - {ticker.upper()}")
     print("=" * 60)
     
     # Fetch data
-    print("\n🔄 Fetching data from Yahoo Finance...")
+    print("\n[SYNC] Fetching data from Yahoo Finance...")
     try:
         data = fetch_stock_data(ticker)
     except Exception as e:
-        print(f"\n❌ Error fetching data: {e}")
+        print(f"\n[ERROR] Error fetching data: {e}")
         print("Please check the ticker symbol is valid and try again.")
         sys.exit(1)
     
@@ -135,7 +135,7 @@ def analyze_ticker(ticker: str, args, basic: bool = False) -> None:
     sector = data['info'].get('sector', 'N/A')
     industry = data['info'].get('industry', 'N/A')
     
-    print(f"\n🏢 {company_name}")
+    print(f"\n[BUILDING] {company_name}")
     print(f"   Sector: {sector or 'N/A'} | Industry: {industry or 'N/A'}")
     
     # Key Metrics (always show these)
@@ -146,7 +146,7 @@ def analyze_ticker(ticker: str, args, basic: bool = False) -> None:
     dividend_yield = data['info'].get('dividendYield')
     beta = data['info'].get('beta')
     
-    print("\n💰 KEY METRICS")
+    print("\n[MONEY] KEY METRICS")
     print("-" * 40)
     print(f"   Current Price     : {format_currency(current_price)}")
     print(f"   Market Cap        : {format_currency(market_cap)}")
@@ -165,7 +165,7 @@ def analyze_ticker(ticker: str, args, basic: bool = False) -> None:
         if previousClose:
             change_abs = current_price - previousClose
             change_pct = ((current_price - previousClose) / previousClose) * 100
-            change_class = "🟢" if change_abs >= 0 else "🔴"
+            change_class = "[UP]" if change_abs >= 0 else "[DOWN]"
             print(f"\n   Previous Close     : ${format_currency(previousClose)}")
             print(f"   Change Today       : {change_class} {format_currency(abs(change_abs))} ({format_percentage(abs(change_pct))})")
         if fiftyTwoWeekHigh or fiftyTwoWeekLow:
@@ -182,18 +182,18 @@ def analyze_ticker(ticker: str, args, basic: bool = False) -> None:
         sma20 = history_1y['Close'].rolling(window=20, min_periods=1).mean()
         sma50 = history_1y['Close'].rolling(window=50, min_periods=1).mean()
         
-        print("\n📈 TECHNICAL ANALYSIS")
+        print("\n[CHART] TECHNICAL ANALYSIS")
         print("-" * 40)
         if len(close_prices) >= 20:
             print(f"   20-day SMA         : ${sma20.iloc[-1]:.2f}")
             current_vs_sma20 = ((close_prices.iloc[-1] - sma20.iloc[-1]) / sma20.iloc[-1]) * 100
-            sma_trend = "📈 Bullish" if close_prices.iloc[-1] > sma20.iloc[-1] else "📉 Bearish"
+            sma_trend = "[UP] Bullish" if close_prices.iloc[-1] > sma20.iloc[-1] else "[DOWN] Bearish"
             print(f"   Current vs SMA20   : {current_vs_sma20:+.2f}% ({sma_trend})")
         
         if len(close_prices) >= 50:
             print(f"   50-day SMA         : ${sma50.iloc[-1]:.2f}")
             current_vs_sma50 = ((close_prices.iloc[-1] - sma50.iloc[-1]) / sma50.iloc[-1]) * 100
-            sma_trend50 = "📈 Bullish" if close_prices.iloc[-1] > sma50.iloc[-1] else "📉 Bearish"
+            sma_trend50 = "[UP] Bullish" if close_prices.iloc[-1] > sma50.iloc[-1] else "[DOWN] Bearish"
             print(f"   Current vs SMA50   : {current_vs_sma50:+.2f}% ({sma_trend50})")
         
         # RSI
@@ -218,14 +218,14 @@ def analyze_ticker(ticker: str, args, basic: bool = False) -> None:
         print(f"   Signal Line        : {signal_line.iloc[-1]:.3f}")
         
         if macd_line.iloc[-1] > signal_line.iloc[-1]:
-            print(f"                       Status: 📈 Bullish")
+            print(f"                       Status: [UP] Bullish")
         else:
-            print(f"                       Status: 📉 Bearish")
+            print(f"                       Status: [DOWN] Bearish")
         
         # Price Performance
         perf_metrics = calculate_performance_metrics(history_1y)
         if perf_metrics:
-            print("\n📊 PERFORMANCE SUMMARY (Last Year)")
+            print("\n[CHART] PERFORMANCE SUMMARY (Last Year)")
             print("-" * 40)
             start_price = perf_metrics.get('start_price') or previousClose
             end_price = perf_metrics.get('end_price') or current_price
@@ -234,13 +234,13 @@ def analyze_ticker(ticker: str, args, basic: bool = False) -> None:
                 pct_change = ((end_price - start_price) / start_price) * 100
                 print(f"   Start Price        : ${format_currency(start_price)}")
                 print(f"   End Price          : ${format_currency(end_price)}")
-                change_dir = "🟢" if pct_change >= 0 else "🔴"
+                change_dir = "[UP]" if pct_change >= 0 else "[DOWN]"
                 print(f"   Change             : {change_dir} {format_currency(abs(end_price - start_price))} ({pct_change:+.2f}%)")
     
     # Shareholders (if available)
     shares_holders = data.get('shares_holders')
     if shares_holders is not None and not shares_holders.empty:
-        print("\n👥 TOP SHAREHOLDERS")
+        print("\n[PEOPLE] TOP SHAREHOLDERS")
         print("-" * 40)
         for idx, (label, row) in enumerate(shares_holders.head(5).iterrows(), 1):
             value = row.iloc[0]
@@ -262,13 +262,13 @@ def analyze_ticker(ticker: str, args, basic: bool = False) -> None:
         html_filename = f"{timestamp}_{ticker.upper()}_report.html"
         html_path = os.path.join('reports', html_filename)
         
-        with open(html_path, 'w') as f:
+        with open(html_path, 'w', encoding='utf-8') as f:
             f.write(html_report)
         
         if args.output == 'html':
-            print("\n📄 HTML Report generated (opening in browser)...")
+            print("\n[FILE] HTML Report generated (opening in browser)...")
         else:
-            print(f"\n💾 HTML report saved to: {html_path}")
+            print(f"\n[SAVE] HTML report saved to: {html_path}")
     
     if output_format in ['text', 'both']:
         if args.text_file:
@@ -276,10 +276,10 @@ def analyze_ticker(ticker: str, args, basic: bool = False) -> None:
             text_filename = f"{timestamp}_{ticker.upper()}_report.txt"
             text_path = os.path.join('reports', text_filename)
             
-            with open(text_path, 'w') as f:
+            with open(text_path, 'w', encoding='utf-8') as f:
                 f.write(text_report)
             
-            print(f"\n📄 Text report saved to: {text_path}")
+            print(f"\n[FILE] Text report saved to: {text_path}")
         else:
             if not basic:
                 print("\n" + "-" * 60)
@@ -292,7 +292,7 @@ def analyze_ticker(ticker: str, args, basic: bool = False) -> None:
         from webbrowser import open as web_open
         try:
             web_open(f"file://{os.path.abspath(html_path)}", new=2)
-            print("\n🌐 Opening HTML report in your default browser...")
+            print("\n[WEB] Opening HTML report in your default browser...")
         except Exception:
             pass
     
@@ -305,7 +305,7 @@ def analyze_ticker(ticker: str, args, basic: bool = False) -> None:
 def list_tickers():
     """List commonly analyzed tickers."""
     print("\n" + "=" * 60)
-    print("📋 COMMONLY ANALYZED STOCKS")
+    print("[LIST] COMMONLY ANALYZED STOCKS")
     print("=" * 60 + "\n")
     
     tickers = [
@@ -344,7 +344,7 @@ def main():
     
     # Handle ticker input
     if not args.ticker:
-        print("\n📊 Stock Market Analyzer")
+        print("\n[CHART] Stock Market Analyzer")
         print("=" * 60)
         print("\nTo analyze a stock, provide a ticker symbol:\n")
         print("   python stock_analyser.py AAPL\n")
@@ -353,7 +353,7 @@ def main():
         
         # Quick picker menu
         print("=" * 60)
-        print("📋 QUICK STOCK PICKER")
+        print("[LIST] QUICK STOCK PICKER")
         print("=" * 60 + "\n")
         
         tickers = [
@@ -393,10 +393,10 @@ def main():
                     stock = yf.Ticker(args.ticker)
                     info = stock.info
                     if not info or len(info) < 3:
-                        print(f"\n❌ Invalid ticker: {args.ticker}")
+                        print(f"\n[ERROR] Invalid ticker: {args.ticker}")
                         sys.exit(1)
                 except Exception as e:
-                    print(f"\n❌ Error fetching data for {args.ticker}: {e}")
+                    print(f"\n[ERROR] Error fetching data for {args.ticker}: {e}")
                     sys.exit(1)
         except KeyboardInterrupt:
             print("\n\nCancelled.")
@@ -413,11 +413,11 @@ def main():
         stock = yf.Ticker(args.ticker)
         info = stock.info
         if not info or len(info) < 3:
-            print(f"\n❌ Invalid ticker symbol: {args.ticker}")
+            print(f"\n[ERROR] Invalid ticker symbol: {args.ticker}")
             print("Please verify the ticker and try again.\n")
             sys.exit(1)
     except Exception as e:
-        print(f"\n❌ Error fetching data for {args.ticker}: {e}")
+        print(f"\n[ERROR] Error fetching data for {args.ticker}: {e}")
         sys.exit(1)
     
     # Call the analysis function
